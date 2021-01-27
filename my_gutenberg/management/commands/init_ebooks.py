@@ -2,7 +2,7 @@ from django.core.management.base import BaseCommand
 from my_gutenberg.models import Ebook
 from my_gutenberg.serializers import EbookSerializer
 import time
-from my_gutenberg.management.commands.importer import ebooks
+from my_gutenberg.management.commands.importer import get_ebook
 
 class Command(BaseCommand):
     help = 'Initialize ebooks database'
@@ -15,14 +15,18 @@ class Command(BaseCommand):
         self.stdout.write('['+time.ctime()+'] Initializing ebooks database')
 
         Ebook.objects.all().delete()
+
         first_ebook_id = kwargs['first_ebook']
         last_ebook_id = kwargs['last_ebook']
-        response = ebooks(first_ebook_id, last_ebook_id)
         
-        for ebook in response:
-            serializer = EbookSerializer(data=ebook)
-            if serializer.is_valid():
-                serializer.save()
-                self.stdout.write(self.style.SUCCESS('['+time.ctime()+'] Successfully added ebook id="%s"' % ebook['id']))
+        for ebook_number in range(first_ebook_id, last_ebook_id +1):
+            try:
+                ebook = get_ebook(ebook_number)
+                serializer = EbookSerializer(data=ebook)
+                if serializer.is_valid():
+                    serializer.save()
+                    self.stdout.write(self.style.SUCCESS('['+time.ctime()+'] Successfully added ebook id="%s"' % ebook_number))
+            except FileNotFoundError:
+                self.stdout.write(self.style.ERROR('['+time.ctime()+'] Skipped ebook id="%s"' % ebook_number))
 
         self.stdout.write('['+time.ctime()+'] Database initializing terminated.')

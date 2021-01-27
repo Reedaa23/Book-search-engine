@@ -83,6 +83,9 @@ def get_ebook(book_number):
     # Copyrights
     copyrights = g.value(SUBJECT, RIGHTS_PREDICATE).__str__()
 
+    if contentURL == None:
+        raise FileNotFoundError
+
     return {
         "id": book_number,
         "title": title,
@@ -96,9 +99,3 @@ def get_ebook(book_number):
         "cover_url": coverURL,
         "release_date": release_date,
     }
-
-def ebooks(start, end):
-    ebooks = []
-    for book_number in range(start, end):
-        ebooks.append(get_ebook(book_number))
-    return ebooks
