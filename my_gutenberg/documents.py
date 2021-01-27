@@ -15,5 +15,5 @@ class PostDocument(Document):
     class Django:
         model = models.Ebook
         fields = [
-            'id', 'title', 'authors', 'subjects', 'bookshelves', 'languages', 'copyright', 'content_url', 'cover_url', 'download_count', 'release_date'
+            'id', 'title', 'authors', 'subjects', 'bookshelves', 'languages', 'copyright', 'content_url', 'cover_url', 'download_count', 'release_date','rank'
         ]
