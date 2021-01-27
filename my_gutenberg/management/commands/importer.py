@@ -56,9 +56,10 @@ def get_ebook(book_number):
     for url in contentURL_generator:
         if url.endswith('.txt'):
             contentURL = url.__str__()
-        if url.endswith('.cover.medium.jpg'):
+        if url.endswith('.jpg'):
             coverURL = url.__str__()
-
+    if(coverURL==None):
+        coverURL = f'https://www.gutenberg.org/files/{book_number}/{book_number}-h/images/cover.jpg'
     # Release Date
     release_date = g.value(SUBJECT, ISSUED_PREDICATE).__str__()
 
@@ -96,8 +97,8 @@ def get_ebook(book_number):
         "release_date": release_date,
     }
 
-def ebooks():
+def ebooks(start, end):
     ebooks = []
-    for book_number in range(44203, 44223):
+    for book_number in range(start, end):
         ebooks.append(get_ebook(book_number))
     return ebooks

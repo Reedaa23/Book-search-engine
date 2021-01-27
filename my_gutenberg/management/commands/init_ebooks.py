@@ -7,10 +7,18 @@ from my_gutenberg.management.commands.importer import ebooks
 class Command(BaseCommand):
     help = 'Initialize ebooks database'
 
-    def handle(self, *args, **options):
+    def add_arguments(self, parser):
+        parser.add_argument('first_ebook', type=int, help='First ebook id to be added')
+        parser.add_argument('last_ebook', type=int, help='Last ebook id to be added')
+
+    def handle(self, *args, **kwargs):
         self.stdout.write('['+time.ctime()+'] Initializing ebooks database')
-        response = ebooks()
+
         Ebook.objects.all().delete()
+        first_ebook_id = kwargs['first_ebook']
+        last_ebook_id = kwargs['last_ebook']
+        response = ebooks(first_ebook_id, last_ebook_id)
+        
         for ebook in response:
             serializer = EbookSerializer(data=ebook)
             if serializer.is_valid():

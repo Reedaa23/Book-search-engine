@@ -20,10 +20,10 @@ class AllEbooks(APIView):
 class RandomEbooks(APIView):
 
     def get(self, request, format=None):
-        randomlist = random.sample(range(44203, 44223),8)
+
+        randomlist = random.sample(list(Ebook.objects.all()),8)
         response = []
-        for pk in randomlist:
-            ebook = Ebook.objects.get(id=pk)
+        for ebook in randomlist:
             serializer = EbookSerializer(ebook, many=False)
             response.append(serializer.data)
         return Response(response)
