@@ -14,7 +14,7 @@ class Ebook(models.Model):
     copyright = models.TextField(max_length=500, blank=True, null=True, default=None)
     content_url = models.URLField(max_length=200, default=None)
     cover_url = models.URLField(max_length=200, blank=True, null=True, default=None)
-    download_count = models.PositiveIntegerField(default=0),
+    download_count = models.PositiveIntegerField(default=0)
     rank = models.PositiveIntegerField(null=True)
 
 

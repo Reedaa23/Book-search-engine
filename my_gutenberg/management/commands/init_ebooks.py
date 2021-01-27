@@ -9,6 +9,7 @@ import re
 import urllib
 import numpy as np
 import networkx as nx
+import itertools
 
 class Command(BaseCommand):
     help = 'Initialize ebooks database'
