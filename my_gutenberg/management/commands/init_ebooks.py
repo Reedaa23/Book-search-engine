@@ -123,7 +123,7 @@ class Command(BaseCommand):
             url = tup[0]
             rank = ranking.index(tup) + 1
             e = Ebook.objects.get(content_url = url)
-            e.classement = rank
+            e.rank = rank
             e.save()
 
         self.stdout.write('['+time.ctime()+']  Ranking calculated...')
