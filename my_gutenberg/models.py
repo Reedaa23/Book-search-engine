@@ -16,6 +16,9 @@ class Ebook(models.Model):
     cover_url = models.URLField(max_length=200, blank=True, null=True, default=None)
     download_count = models.PositiveIntegerField(default=0)
     rank = models.PositiveIntegerField(null=True)
+    neighbors = models.TextField(max_length=500, blank=True, null=True, default=None)
+    keywords = models.CharField(max_length=200, blank=True, null=True, default=None)
+
 
 
     class Meta:

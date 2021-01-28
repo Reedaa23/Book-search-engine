@@ -98,5 +98,7 @@ def get_ebook(book_number):
         "download_count": downloads,
         "cover_url": coverURL,
         "release_date": release_date,
-        "rank" : 2000
+        "rank" : 2000,
+        "neighbors":"",
+        "keywords" : ""
     }

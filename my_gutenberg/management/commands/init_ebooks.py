@@ -10,6 +10,7 @@ import urllib
 import numpy as np
 import networkx as nx
 import itertools
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 class Command(BaseCommand):
     help = 'Initialize ebooks database'
@@ -46,6 +47,7 @@ class Command(BaseCommand):
 
         self.stdout.write('['+time.ctime()+'] Calculating Jaccard Matrix...')
         txt_list = []
+        str_list = []
         special_letters = 'àèìòùÀÈÌÒÙáéíóúýÁÉÍÓÚÝâêîôûÂÊÎÔÛãñõÃÑÕäëïöüÿÄËÏÖÜŸçÇßØøÅåÆæœ'
         decoding = "ISO-8859-1"
         n = len(books_urls)
@@ -58,27 +60,32 @@ class Command(BaseCommand):
             if i ==0:
                 # Ouvir l'url, lire puis décoder le contenu
                 txt = urllib.request.urlopen(books_urls[i]).read().decode(decoding)
-                # Ajouter le texte décodé dans la liste des textes 
                 txt_list.append(txt)
+                # Ajouter le texte décodé dans la liste des textes 
+                print(books_urls[i])
+                # Rendre le texte en minuscule, diviser en mots, mettre ces mots dans une liste
+                s1 = re.split('[^a-zA-Z0-9'+special_letters+']', txt.lower())
+                str1 = list(filter(lambda x: x !="", s1))
+                str_list.append(str1)
             else:
-                txt = txt_list[i]
+                str1 = str_list[i]
 
-            # Rendre le texte en minuscule, diviser en mots, mettre ces mots dans une liste
-            s1 = re.split('[^a-zA-Z0-9'+special_letters+']', txt.lower())
-            str1 = list(filter(lambda x: x !="", s1))
-            
+
             for j in range(len(books_urls))[i + 1:]:
+
+                print("    ",books_urls[j])
                 num = 0
                 denom = 0
                 # Si premier livre, décoder et ajouter le texte décodé des autres livres, sinon  
                 if i==0:
                     txt2 = urllib.request.urlopen(books_urls[j]).read().decode(decoding)
+                    s2 = re.split('[^a-zA-Z0-9'+special_letters+']', txt2.lower())
+                    str2 = list(filter(lambda x: x !="", s2))
+                    str_list.append(str2)
                     txt_list.append(txt2)
                 else:
-                    txt2 = txt_list[j]
+                    str2 = str_list[j]
 
-                s2 = re.split('[^a-zA-Z0-9'+special_letters+']', txt2.lower())
-                str2 = list(filter(lambda x: x !="", s2))
 
                 # Fusionner les deux listes de mots 
                 D = str1 + str2
@@ -87,6 +94,7 @@ class Command(BaseCommand):
                 d2 = Counter(str2)
 
                 # Pour chaque mot dans les deux livres, récuperer son nombre d'occurence
+                # print( '['+time.ctime()+'] commence comptage')
                 for m in D:
                     k1 = d1[m]
                     k2 = d2[m]
@@ -95,6 +103,7 @@ class Command(BaseCommand):
                     num = num + MAX - MIN
                     denom = denom + MAX
                 MATRIX[i][j] = num / denom
+                # print('['+time.ctime()+']fini comptage')
 
         self.stdout.write('['+time.ctime()+']  Jaccard Matrix calculated...')
          
@@ -128,4 +137,27 @@ class Command(BaseCommand):
 
         self.stdout.write('['+time.ctime()+']  Ranking calculated...')
 
+        self.stdout.write('['+time.ctime()+']  Calculating neighbors...')
 
+        for node in G.nodes:
+            voisins = G.neighbors(node)
+            voisins_ids = []
+            for voisin in voisins:
+                b = Ebook.objects.filter(content_url=voisin).values_list("id")
+                voisin_id = list(itertools.chain(*b))[0]
+                voisins_ids.append(str(voisin_id))
+                neighbors = '/'.join(voisins_ids)
+                e = Ebook.objects.get(content_url = voisin)
+                e.neighbors = neighbors
+                e.save()
+        
+
+        for i in range(len(books_urls)):
+
+            vectorizer = TfidfVectorizer(max_features = 10, lowercase=False, stop_words = 'english')
+            X = vectorizer.fit_transform(str_list[i])
+            keywords = list(vectorizer.vocabulary_.keys())
+            kw = ','.join(keywords)
+            e = Ebook.objects.get(content_url = books_urls[i])
+            e.keywords = kw
+            e.save()
