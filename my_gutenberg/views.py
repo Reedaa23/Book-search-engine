@@ -42,8 +42,10 @@ class EbookDetail(APIView):
 #        NO DEFITION of delete --> server will return "405 NOT ALLOWED"
 
 class Search(APIView):
-    
     def get(self, request, format=None):
+        fields = [
+            'id', 'title', 'authors', 'subjects', 'bookshelves', 'languages', 'copyright', 'content_url', 'cover_url', 'download_count', 'release_date','rank', 'neighbors','keywords'
+        ]
         try:
             key = request.query_params.get('key')
             regex = request.query_params.get('regex', 'false')
@@ -51,7 +53,7 @@ class Search(APIView):
             if(regex.lower() == 'true'):
                 es_request = PostDocument.search().query('query_string', query=key)
             else:
-                es_request = PostDocument.search().query('match', title=key)
+                es_request = PostDocument.search().query('multi_match', query=key, fields=["title", "authors", "subjects", "bookshelves", "keywords"], type="phrase")
             
             es_response = es_request.execute()
             response = []
