@@ -19,8 +19,6 @@ class Ebook(models.Model):
     neighbors = models.TextField(max_length=500, blank=True, null=True, default=None)
     keywords = models.CharField(max_length=200, blank=True, null=True, default=None)
 
-
-
     class Meta:
         ordering = ('id',)
 

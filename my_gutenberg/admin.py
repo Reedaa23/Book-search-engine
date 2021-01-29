@@ -4,6 +4,6 @@ from my_gutenberg.models import Ebook
 # Register your models here.
 
 class PostAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title', 'authors', 'subjects', 'bookshelves', 'languages', 'copyright', 'content_url', 'cover_url', 'download_count')
+    list_display = ('id', 'title', 'authors', 'subjects', 'bookshelves', 'languages', 'copyright', 'content_url', 'cover_url', 'download_count', 'release_date','rank', 'neighbors','keywords')
 
 admin.site.register(Ebook, PostAdmin)

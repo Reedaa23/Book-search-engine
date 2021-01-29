@@ -3,7 +3,7 @@ from my_gutenberg.models import Ebook
 from my_gutenberg.serializers import EbookSerializer
 import time
 from my_gutenberg.management.commands.importer import get_ebook
-
+from django.contrib.admin.models import LogEntry
 from collections import Counter
 import re
 import urllib
@@ -22,6 +22,7 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         self.stdout.write('['+time.ctime()+'] Initializing ebooks database')
 
+        LogEntry.objects.all().delete()
         Ebook.objects.all().delete()
 
         first_ebook_id = kwargs['first_ebook']
@@ -45,13 +46,17 @@ class Command(BaseCommand):
         books_urls = list(itertools.chain(*a))
 
 
-        self.stdout.write('['+time.ctime()+'] Calculating Jaccard Matrix...')
+        self.stdout.write('['+time.ctime()+'] Calculating Jaccard Matrix and Graph...')
         txt_list = []
         str_list = []
         special_letters = 'àèìòùÀÈÌÒÙáéíóúýÁÉÍÓÚÝâêîôûÂÊÎÔÛãñõÃÑÕäëïöüÿÄËÏÖÜŸçÇßØøÅåÆæœ'
         decoding = "ISO-8859-1"
         n = len(books_urls)
         MATRIX = np.zeros((n, n))
+        # Graph 
+        threshold = 0.7
+        G = nx.Graph()
+        
 
         # Remplissage ligne par ligne
         for i in range(len(books_urls)):
@@ -105,20 +110,22 @@ class Command(BaseCommand):
                 MATRIX[i][j] = num / denom
                 # print('['+time.ctime()+']fini comptage')
 
-        self.stdout.write('['+time.ctime()+']  Jaccard Matrix calculated...')
-         
-        # Graph 
-        self.stdout.write('['+time.ctime()+'] Calculating Graph...')
-        threshold = 0.7
-        G = nx.Graph()
-
-        for i in range(len(books_urls)):
-            for j in range(len(books_urls))[i+1:]:
                 distance = MATRIX[i][j]
                 if distance < threshold:
                     G.add_edge(books_urls[i], books_urls[j], weight = distance)
+
+            vectorizer = TfidfVectorizer(max_features = 10, lowercase=False, stop_words = 'english')
+            X = vectorizer.fit_transform(str_list[i])
+            keywords = list(vectorizer.vocabulary_.keys())
+            kw = ','.join(keywords)
+            e = Ebook.objects.get(content_url = books_urls[i])
+            e.keywords = kw
+            e.save()
+            
+
+        self.stdout.write('['+time.ctime()+']  Jaccard Matrix calculated...')
         self.stdout.write('['+time.ctime()+'] Graph generated...')
-        
+      
         # Closeness centrality, return {"vetex" : cc, "vertex" : cc }
         self.stdout.write('['+time.ctime()+'] Calculating CC...')
         CC = nx.closeness_centrality(G)
@@ -150,14 +157,5 @@ class Command(BaseCommand):
                 e = Ebook.objects.get(content_url = voisin)
                 e.neighbors = neighbors
                 e.save()
-        
 
-        for i in range(len(books_urls)):
-
-            vectorizer = TfidfVectorizer(max_features = 10, lowercase=False, stop_words = 'english')
-            X = vectorizer.fit_transform(str_list[i])
-            keywords = list(vectorizer.vocabulary_.keys())
-            kw = ','.join(keywords)
-            e = Ebook.objects.get(content_url = books_urls[i])
-            e.keywords = kw
-            e.save()
+        self.stdout.write('['+time.ctime()+'] END...')
