@@ -56,7 +56,7 @@ def get_ebook(book_number):
     for url in contentURL_generator:
         if url.endswith('.txt'):
             contentURL = url.__str__()
-        if url.endswith('.jpg'):
+        if url.endswith('medium.jpg'):
             coverURL = url.__str__()
     if(coverURL==None):
         coverURL = f'https://www.gutenberg.org/files/{book_number}/{book_number}-h/images/cover.jpg'
