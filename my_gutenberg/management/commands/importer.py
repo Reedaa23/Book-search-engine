@@ -40,14 +40,14 @@ def get_ebook(book_number):
     authors = ""
     for author_node in author_generator:
         author = g.value(author_node, NAME_PREDICATE).__str__()
-        authors += "/"+author
+        authors += author + "/"
 
     # Language
     language_generator = g.objects(SUBJECT, LANGUAGE_PREDICATE)
     languages = ""
     for language_node in language_generator:
         language = g.value(language_node, VALUE_PREDICATE).__str__()
-        languages += "/" + language
+        languages += language
 
     # Content URL (.txt)
     contentURL_generator = g.objects(SUBJECT, HAS_FORMAT_PREDICATE)
@@ -68,14 +68,14 @@ def get_ebook(book_number):
     subjects = ""
     for subject_node in subject_generator:
         subject = g.value(subject_node, VALUE_PREDICATE).__str__()
-        subjects += "/" + subject
+        subjects += subject + "/"
 
     # Shelves
     shelf_generator = g.objects(SUBJECT, SHELF_PREDICATE)
     shelves = ""
     for shelf_node in shelf_generator:
         shelf = g.value(shelf_node, VALUE_PREDICATE).__str__()
-        shelves += "/" + shelf
+        shelves += shelf + "/"
 
     # Downloads
     downloads = g.value(SUBJECT, DOWNLOAD_PREDICATE).__str__()

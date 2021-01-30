@@ -68,10 +68,13 @@ class Search(APIView):
                             suggested_neighbors.append(neighbor)
                             if (len(suggested_neighbors) == 5):
                                 break
+        if "" in suggested_neighbors:
+            suggested_neighbors.remove("")
         for neighbor in suggested_neighbors:
             ebook = Ebook.objects.get(id=neighbor)
             serializer = EbookSerializer(ebook, many=False)
-            response['neighbors'].append({"id": serializer.data["id"], "title": serializer.data["title"], "authors": serializer.data["authors"]})
+            if serializer.data not in response['result']:
+                response['neighbors'].append({"id": serializer.data["id"], "title": serializer.data["title"], "authors": serializer.data["authors"]})
         return Response(response)
         """except:
             raise Http404"""

@@ -11,6 +11,7 @@ import numpy as np
 import networkx as nx
 import itertools
 from sklearn.feature_extraction.text import TfidfVectorizer
+from stop_words import safe_get_stop_words
 
 class Command(BaseCommand):
     help = 'Initialize ebooks database'
@@ -27,7 +28,7 @@ class Command(BaseCommand):
 
         first_ebook_id = kwargs['first_ebook']
         last_ebook_id = kwargs['last_ebook']
-        
+
         for ebook_number in range(first_ebook_id, last_ebook_id +1):
             try:
                 ebook = get_ebook(ebook_number)
@@ -44,7 +45,8 @@ class Command(BaseCommand):
         
         a = Ebook.objects.values_list("content_url")
         books_urls = list(itertools.chain(*a))
-
+        languages = Ebook.objects.values_list("languages")
+        languages = list(itertools.chain(*languages))
 
         self.stdout.write('['+time.ctime()+'] Calculating Jaccard Matrix and Graph...')
         txt_list = []
@@ -113,8 +115,10 @@ class Command(BaseCommand):
                 distance = MATRIX[i][j]
                 if distance < threshold:
                     G.add_edge(books_urls[i], books_urls[j], weight = distance)
-
-            vectorizer = TfidfVectorizer(max_features = 10, lowercase=False, stop_words = 'english')
+            if languages[i] == "en":
+                vectorizer = TfidfVectorizer(max_features = 10, lowercase=False, stop_words = 'english')
+            else:
+                vectorizer = TfidfVectorizer(max_features = 10, lowercase=False, stop_words = safe_get_stop_words(languages[i]))
             X = vectorizer.fit_transform(str_list[i])
             keywords = list(vectorizer.vocabulary_.keys())
             kw = ','.join(keywords)
@@ -148,14 +152,17 @@ class Command(BaseCommand):
 
         for node in G.nodes:
             voisins = G.neighbors(node)
-            voisins_ids = []
+            neighbors = ""
             for voisin in voisins:
-                b = Ebook.objects.filter(content_url=voisin).values_list("id")
-                voisin_id = list(itertools.chain(*b))[0]
-                voisins_ids.append(str(voisin_id))
-                neighbors = '/'.join(voisins_ids)
-                e = Ebook.objects.get(content_url = voisin)
-                e.neighbors = neighbors
-                e.save()
+                m = re.search('http://www.gutenberg.org/files/([0-9]+)/', voisin)
+                if m:
+                    id = m.group(1)
+                    neighbors += "/"+id
+                else:
+                    continue
 
+            e = Ebook.objects.get(content_url=node)
+            e.neighbors = neighbors
+            e.save()
+            
         self.stdout.write('['+time.ctime()+'] END...')
