@@ -71,7 +71,7 @@ class Search(APIView):
         for neighbor in suggested_neighbors:
             ebook = Ebook.objects.get(id=neighbor)
             serializer = EbookSerializer(ebook, many=False)
-            response['neighbors'].append({"title": serializer.data["title"], "authors": serializer.data["authors"]})
+            response['neighbors'].append({"id": serializer.data["id"], "title": serializer.data["title"], "authors": serializer.data["authors"]})
         return Response(response)
         """except:
             raise Http404"""
