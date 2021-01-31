@@ -154,25 +154,25 @@ class Command(BaseCommand):
                 json.dump(i, ff, ensure_ascii=False, indent=4)
         
 
+
+            for node in G.nodes:
+                voisins = G.neighbors(node)
+                neighbors = ""
+                for voisin in voisins:
+                    m = re.search('http://www.gutenberg.org/files/([0-9]+)/', voisin)
+                    if m:
+                        id = m.group(1)
+                        neighbors += id + "/"
+                    else:
+                        continue
+
+                e = Ebook.objects.get(content_url=node)
+                e.neighbors = neighbors
+                e.save()
+
+
         print('['+time.ctime()+'] Calculating Jaccard Matrix terminated...')
         print(DataFrame(MATRIX))
         os.remove(words_file_name)
         os.remove(lastLine_file_name)
         os.remove(graph_file_name)
-
-
-        for node in G.nodes:
-            voisins = G.neighbors(node)
-            neighbors = ""
-            for voisin in voisins:
-                m = re.search('http://www.gutenberg.org/files/([0-9]+)/', voisin)
-                if m:
-                    id = m.group(1)
-                    neighbors += id + "/"
-                else:
-                    continue
-
-            e = Ebook.objects.get(content_url=node)
-            e.neighbors = neighbors
-            e.save()
-
