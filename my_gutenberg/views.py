@@ -21,7 +21,11 @@ class RandomEbooks(APIView):
 
     def get(self, request, format=None):
 
-        randomlist = random.sample(list(Ebook.objects.all()),8)
+        all_ebooks = list(Ebook.objects.all())
+        if len(all_ebooks) < 8:
+            randomlist = random.sample(list(Ebook.objects.all()),len(all_ebooks))
+        else:
+            randomlist = random.sample(list(Ebook.objects.all()),8)
         response = []
         for ebook in randomlist:
             serializer = EbookSerializer(ebook, many=False)
@@ -33,6 +37,7 @@ class RandomEbooks(APIView):
 class EbookDetail(APIView):
     
     def get(self, request, pk, format=None):
+
         ebook = Ebook.objects.get(id=pk)
         serializer = EbookSerializer(ebook, many=False)
         return Response(serializer.data)
@@ -43,6 +48,7 @@ class EbookDetail(APIView):
 
 class Search(APIView):
     def get(self, request, format=None):
+        
         fields = [
             'id', 'title', 'authors', 'subjects', 'bookshelves', 'languages', 'copyright', 'content_url', 'cover_url', 'download_count', 'release_date','rank', 'neighbors','keywords'
         ]

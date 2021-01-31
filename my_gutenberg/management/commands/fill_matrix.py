@@ -169,7 +169,7 @@ class Command(BaseCommand):
                 m = re.search('http://www.gutenberg.org/files/([0-9]+)/', voisin)
                 if m:
                     id = m.group(1)
-                    neighbors += "/"+id
+                    neighbors += id + "/"
                 else:
                     continue
 
