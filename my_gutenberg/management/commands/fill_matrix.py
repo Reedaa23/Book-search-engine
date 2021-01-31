@@ -15,6 +15,9 @@ from os import path
 from pandas import DataFrame
 import json
 from networkx.readwrite import json_graph
+import ssl
+from sklearn.feature_extraction.text import TfidfVectorizer
+from stop_words import safe_get_stop_words
 
 class Command(BaseCommand):
     help = 'Fill jaccard matrix'
@@ -35,84 +38,49 @@ class Command(BaseCommand):
         
 
         books_urls = []
-
-
         a = Ebook.objects.filter(id__range=[first_ebook_id, last_ebook_id]).values_list("content_url")
         books_urls = list(itertools.chain(*a))
-        languages = Ebook.objects.values_list("languages")
+                
+        languages = Ebook.objects.filter(id__range=[first_ebook_id, last_ebook_id]).values_list("languages")
         languages = list(itertools.chain(*languages))
 
+        
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
 
+        n = len(books_urls)
+        MATRIX = np.zeros((n, n))
         decoding = "ISO-8859-1"
         special_letters = 'àèìòùÀÈÌÒÙáéíóúýÁÉÍÓÚÝâêîôûÂÊÎÔÛãñõÃÑÕäëïöüÿÄËÏÖÜŸçÇßØøÅåÆæœ'
-        n = len(books_urls)
-        jaccard_file_name = './matrix.json'
+        G = nx.Graph()
+        G.add_nodes_from(books_urls)
+
         threshold = 0.7
-
-        if os.path.isfile(jaccard_file_name):
-            print ("File exist")
-            f = open(jaccard_file_name, 'r')
-            MATRIX = json.load(f)
-            f.close()
-        else:
-            print ("File not exist")
-            print("Please run init_ebooks first")
-            MATRIX = np.zeros((n, n))
+        str_list = []
 
 
-        
-        lastLine_file_name = "./lastLine.json"
-        if os.path.isfile(lastLine_file_name):
-            file_line = open(lastLine_file_name, 'r')
-            next_line = json.load(file_line)
-            file_line.close()
-        else:
-            next_line = 0
-
-
-
-
-        graph_file_name = "./graph.json"
-        if os.path.isfile(graph_file_name):
-            file_graph = open("graph.json", "r")
-            g_data = json.load(file_graph)
-            file_graph.close()
-            G = json_graph.node_link_graph(g_data)
-        else:
-            G = nx.Graph()
-
-
-
-
-        words_file_name = './str.json'
-        if os.path.isfile(words_file_name):
-            file_str = open(words_file_name, 'r')
-            str_list = json.load(file_str)
-            file_str.close()
-        else:
-            exit()
-
-
-
-
-
-        print('initial matrix')
-        print(DataFrame(MATRIX))
-        print('['+time.ctime()+'] Calculating Jaccard Matrix...')
-
-
-        for i in range(next_line,len(books_urls)):
-            try:
+        for i in range(len(books_urls)):
+            print("Row number : ", i)
+            if i ==0:
+                txt = urllib.request.urlopen(books_urls[i], context = ctx).read().decode(decoding)
+                s1 = re.split('[^a-zA-Z0-9'+special_letters+']', txt.lower())
+                str1 = list(filter(lambda x: x !="", s1))
+                str_list.append(str1)
+            else:
                 str1 = str_list[i]
-                print("Row number : {} ".format(i))
-            except IndexError:
-                exit()
-                
 
             for j in range(len(books_urls))[i + 1:]:
+                print("Column number : ", j)
                 num = 0
                 denom = 0
-                str2 = str_list[j]
+                if i==0:
+                    txt2 = urllib.request.urlopen(books_urls[j], context = ctx).read().decode(decoding)
+                    s2 = re.split('[^a-zA-Z0-9'+special_letters+']', txt2.lower())
+                    str2 = list(filter(lambda x: x !="", s2))
+                    str_list.append(str2)
+                else:
+                    str2 = str_list[j]
 
                 D = str1 + str2
                 d1 = Counter(str1)
@@ -126,53 +94,67 @@ class Command(BaseCommand):
                     num = num + MAX - MIN
                     denom = denom + MAX
                 MATRIX[i][j] = num / denom
-                
+
                 distance = MATRIX[i][j]
                 if distance < threshold:
                     G.add_edge(books_urls[i], books_urls[j], weight = distance)
-                with open('graph.json','w', encoding='utf-8') as fg:
-                    g_json = json_graph.node_link_data(G)
-                    json.dump(g_json,fg,indent=4)
+            
 
-            CC = nx.closeness_centrality(G)
-            ranking = sorted(CC.items(), key=lambda item: item[1], reverse=True)
-            for tup in ranking:
-                url = tup[0]
-                rank = ranking.index(tup) + 1
-                e = Ebook.objects.get(content_url = url)
-                e.rank = rank
-                e.save()
+            if languages[i] == "en":
+                vectorizer = TfidfVectorizer(max_features = 10, lowercase=False, stop_words = 'english')
+            else:
+                vectorizer = TfidfVectorizer(max_features = 10, lowercase=False, stop_words = safe_get_stop_words(languages[i]))
+
+            X = vectorizer.fit_transform(str_list[i])
+            keywords = list(vectorizer.vocabulary_.keys())
+            kw = ','.join(keywords)
+            e = Ebook.objects.get(content_url = books_urls[i])
+            e.keywords = kw
+            e.save()
+
+        try:
+            matrix = MATRIX.tolist()
+        except AttributeError:
+            matrix = MATRIX 
+        with open('matrix.json','w', encoding='utf-8') as f:
+            json.dump(matrix, f, ensure_ascii=False, indent=4)
+
+        self.stdout.write('['+time.ctime()+']  Jaccard Matrix calculated...')
+        self.stdout.write('['+time.ctime()+'] Graph generated...')
+    
+        # Closeness centrality, return {"vetex" : cc, "vertex" : cc }
+        self.stdout.write('['+time.ctime()+'] Calculating CC...')
+        CC = nx.closeness_centrality(G)
+        self.stdout.write('['+time.ctime()+']  CC calculated...')
         
-            # Finished a line ? write in the file
-            try:
-                matrix = MATRIX.tolist()
-            except AttributeError:
-                matrix = MATRIX 
-            with open('matrix.json','w', encoding='utf-8') as f:
-                json.dump(matrix, f, ensure_ascii=False, indent=4)
-            with open(lastLine_file_name, 'w', encoding='utf-8') as ff:
-                json.dump(i, ff, ensure_ascii=False, indent=4)
-        
+        # Ranking
+        self.stdout.write('['+time.ctime()+'] Calculating ranking...')
+        ranking = sorted(CC.items(), key=lambda item: item[1], reverse=True)
+
+        for tup in ranking:
+            url = tup[0]
+            rank = ranking.index(tup) + 1
+            e = Ebook.objects.get(content_url = url)
+            e.rank = rank
+            e.save()
+
+        self.stdout.write('['+time.ctime()+']  Ranking calculated...')
+
+        self.stdout.write('['+time.ctime()+']  Calculating neighbors...')
 
 
-            for node in G.nodes:
-                voisins = G.neighbors(node)
-                neighbors = ""
-                for voisin in voisins:
-                    m = re.search('http://www.gutenberg.org/files/([0-9]+)/', voisin)
-                    if m:
-                        id = m.group(1)
-                        neighbors += id + "/"
-                    else:
-                        continue
+        for node in G.nodes:
+            voisins = G.neighbors(node)
+            neighbors = ""
+            for voisin in voisins:
+                m = re.search('www.gutenberg.org/files/([0-9]+)/', voisin)
+                if m:
+                    id = m.group(1)
+                    neighbors += id + "/"
+                else:
+                    continue
 
-                e = Ebook.objects.get(content_url=node)
-                e.neighbors = neighbors
-                e.save()
+            e = Ebook.objects.get(content_url=node)
+            e.neighbors = neighbors
+            e.save()
 
-
-        print('['+time.ctime()+'] Calculating Jaccard Matrix terminated...')
-        print(DataFrame(MATRIX))
-        os.remove(words_file_name)
-        os.remove(lastLine_file_name)
-        os.remove(graph_file_name)
