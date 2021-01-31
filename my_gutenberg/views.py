@@ -74,12 +74,14 @@ class Search(APIView):
                                 suggested_neighbors.append(neighbor)
                                 if (len(suggested_neighbors) == 5):
                                     break
+            if "" in suggested_neighbors:
+                suggested_neighbors.remove("")
             for neighbor in suggested_neighbors:
                 ebook = Ebook.objects.get(id=neighbor)
                 serializer = EbookSerializer(ebook, many=False)
                 response['neighbors'].append({"id": serializer.data["id"], "title": serializer.data["title"], "authors": serializer.data["authors"]})
             return Response(response)
-        except:
+        except  :
             raise Http404
 #    def put(self, request, pk, format=None):
 #        NO DEFITION of put --> server will return "405 NOT ALLOWED"
