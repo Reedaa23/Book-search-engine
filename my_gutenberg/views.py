@@ -46,38 +46,35 @@ class Search(APIView):
         fields = [
             'id', 'title', 'authors', 'subjects', 'bookshelves', 'languages', 'copyright', 'content_url', 'cover_url', 'download_count', 'release_date','rank', 'neighbors','keywords'
         ]
-        #try:
-        key = request.query_params.get('key')
-        regex = request.query_params.get('regex', 'false')
-        
-        if(regex.lower() == 'true'):
-            es_request = PostDocument.search().query('query_string', query=key)
-        else:
-            es_request = PostDocument.search().query('multi_match', query=key, fields=["title", "authors", "subjects", "bookshelves", "keywords"], type="phrase")
-        
-        es_response = es_request.execute()
-        response = {'result': [], 'neighbors': [] }
-        suggested_neighbors = []
-        for book in es_response.to_dict()['hits']['hits']:
-            response['result'].append(book['_source'])
-            if 'neighbors' in book['_source'].keys():
-                neighbors = book['_source']['neighbors'].split('/')
-                if (len(suggested_neighbors) < 5):
-                    for neighbor in neighbors:
-                        if neighbor not in suggested_neighbors:
-                            suggested_neighbors.append(neighbor)
-                            if (len(suggested_neighbors) == 5):
-                                break
-        if "" in suggested_neighbors:
-            suggested_neighbors.remove("")
-        for neighbor in suggested_neighbors:
-            ebook = Ebook.objects.get(id=neighbor)
-            serializer = EbookSerializer(ebook, many=False)
-            if serializer.data not in response['result']:
+        try:
+            key = request.query_params.get('key')
+            regex = request.query_params.get('regex', 'false')
+            
+            if(regex.lower() == 'true'):
+                es_request = PostDocument.search().query('query_string', query=key)
+            else:
+                es_request = PostDocument.search().query('multi_match', query=key, fields=["title", "authors", "subjects", "bookshelves", "keywords"], type="phrase")
+            
+            es_response = es_request.execute()
+            response = {'result': [], 'neighbors': [] }
+            suggested_neighbors = []
+            for book in es_response.to_dict()['hits']['hits']:
+                response['result'].append(book['_source'])
+                if 'neighbors' in book['_source'].keys():
+                    neighbors = book['_source']['neighbors'].split('/')
+                    if (len(suggested_neighbors) < 5):
+                        for neighbor in neighbors:
+                            if neighbor not in suggested_neighbors:
+                                suggested_neighbors.append(neighbor)
+                                if (len(suggested_neighbors) == 5):
+                                    break
+            for neighbor in suggested_neighbors:
+                ebook = Ebook.objects.get(id=neighbor)
+                serializer = EbookSerializer(ebook, many=False)
                 response['neighbors'].append({"id": serializer.data["id"], "title": serializer.data["title"], "authors": serializer.data["authors"]})
-        return Response(response)
-        """except:
-            raise Http404"""
+            return Response(response)
+        except:
+            raise Http404
 #    def put(self, request, pk, format=None):
 #        NO DEFITION of put --> server will return "405 NOT ALLOWED"
 #    def delete(self, request, pk, format=None):
