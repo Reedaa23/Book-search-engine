@@ -10,7 +10,6 @@ import urllib
 import numpy as np
 import networkx as nx
 import itertools
-# from sklearn.feature_extraction.text import TfidfVectorizer
 import os.path
 from os import path
 from pandas import DataFrame
@@ -91,7 +90,7 @@ class Command(BaseCommand):
             str_list = json.load(file_str)
             file_str.close()
         else:
-            str_list = []
+            exit()
 
 
 
