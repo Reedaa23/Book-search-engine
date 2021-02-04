@@ -1,3 +1,4 @@
+from copy import Error
 from django.http import Http404
 from my_gutenberg.documents import PostDocument
 from rest_framework.views import APIView
@@ -57,15 +58,23 @@ class Search(APIView):
             regex = request.query_params.get('regex', 'false')
             
             if(regex.lower() == 'true'):
-                es_request = PostDocument.search().query('query_string', query=key)
+                es_request = PostDocument.search().query('query_string', query=key).highlight('title','authors', pre_tags="<mark>", post_tags="</mark>")
             else:
-                es_request = PostDocument.search().query('multi_match', query=key, fields=["title", "authors", "subjects", "bookshelves", "keywords"], type="phrase")
+                es_request = PostDocument.search().query('multi_match', query=key, fields=["title", "authors", "subjects", "bookshelves", "keywords"], type="phrase").highlight('title','authors', pre_tags="<mark>", post_tags="</mark>")
             
             es_response = es_request.execute()
             response = {'result': [], 'neighbors': [] }
             suggested_neighbors = []
             for book in es_response.to_dict()['hits']['hits']:
-                response['result'].append(book['_source'])
+                # Highlight
+                book_source = book['_source']
+                if(book.get('highlight', None)):
+                    if(book['highlight'].get('title', None)):
+                        book_source['title'] = book['highlight']['title'][0]
+                if(book.get('highlight', None)):
+                    if(book['highlight'].get('authors', None)):
+                        book_source['authors'] = book['highlight']['authors'][0]
+                response['result'].append(book_source)
                 if 'neighbors' in book['_source'].keys():
                     neighbors = book['_source']['neighbors'].split('/')
                     if (len(suggested_neighbors) < 5):
@@ -81,7 +90,7 @@ class Search(APIView):
                 serializer = EbookSerializer(ebook, many=False)
                 response['neighbors'].append({"id": serializer.data["id"], "title": serializer.data["title"], "authors": serializer.data["authors"]})
             return Response(response)
-        except  :
+        except  FileExistsError:
             raise Http404
 #    def put(self, request, pk, format=None):
 #        NO DEFITION of put --> server will return "405 NOT ALLOWED"

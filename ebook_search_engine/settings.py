@@ -25,7 +25,7 @@ SECRET_KEY = 'vne$41)fnuf7qa^h=50sv=z$!#v4r08o8-%kl5$+_4bdcid4t^'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['192.168.1.4']
 
 
 # Application definition
@@ -146,6 +146,6 @@ REST_FRAMEWORK = {
 # Elasticsearch configuration
 ELASTICSEARCH_DSL = {
     'default': {
-        'hosts': 'localhost:9200'
+        'hosts': '192.168.1.4:9200'
     },
 }
