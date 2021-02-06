@@ -1,0 +1,29 @@
+version: "3.9"
+   
+services:
+  elasticsearch:
+    image: elasticsearch:7.10.1
+    environment:
+      - 'http.cors.enabled=true'
+      - 'http.cors.allow-origin=*'
+      - 'network.host=0'
+      - 'discovery.type=single-node'
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+  api:
+    build: .
+    # put elasticsearch host/ip here
+    environment: 
+      - ES_host=192.168.1.4
+    ports:
+      - "8000:8000"
+    depends_on:
+      - elasticsearch
+  front:
+    image: sofianechikhbled/booklib-front
+    environment: 
+      - 'ES_HOST=192.168.1.4'
+      - 'API_HOST=192.168.1.4'
+    ports:
+      - "3000:3000"

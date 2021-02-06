@@ -50,9 +50,6 @@ class EbookDetail(APIView):
 class Search(APIView):
     def get(self, request, format=None):
         
-        fields = [
-            'id', 'title', 'authors', 'subjects', 'bookshelves', 'languages', 'copyright', 'content_url', 'cover_url', 'download_count', 'release_date','rank', 'neighbors','keywords'
-        ]
         try:
             key = request.query_params.get('key')
             regex = request.query_params.get('regex', 'false')

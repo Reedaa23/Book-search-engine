@@ -30,7 +30,7 @@ SUBJECT_URL = 'http://www.gutenberg.org/ebooks/{}'
 g = rdflib.Graph()
 
 def get_ebook(book_number):
-    g.load('my_gutenberg/management/commands/epub/{}/pg{}.rdf'.format(book_number, book_number))
+    g.load('./cache/epub/{}/pg{}.rdf'.format(book_number, book_number))
     SUBJECT = URIRef(SUBJECT_URL.format(book_number))
 
     # Title
