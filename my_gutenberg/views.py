@@ -7,8 +7,7 @@ from my_gutenberg.models import Ebook
 from .serializers import EbookSerializer
 import random
 
-# Create your views here.
-
+# Create a view that returns all the ebooks with all their fields
 class AllEbooks(APIView):
 
     def get(self, request, format=None):
@@ -18,11 +17,13 @@ class AllEbooks(APIView):
 #    def post(self, request, format=None):
 #        NO DEFITION of post --> server will return "405 NOT ALLOWED"
 
+# Create a view that returns 8 random ebooks with all their fields
 class RandomEbooks(APIView):
 
     def get(self, request, format=None):
 
         all_ebooks = list(Ebook.objects.all())
+        # In case we have less than 8 ebooks in our database
         if len(all_ebooks) < 8:
             randomlist = random.sample(list(Ebook.objects.all()),len(all_ebooks))
         else:
@@ -35,6 +36,7 @@ class RandomEbooks(APIView):
 #    def post(self, request, format=None):
 #        NO DEFITION of post --> server will return "405 NOT ALLOWED"
 
+# Create a view that returns all fields of an ebook with the given id
 class EbookDetail(APIView):
     
     def get(self, request, pk, format=None):
@@ -47,6 +49,7 @@ class EbookDetail(APIView):
 #    def delete(self, request, pk, format=None):
 #        NO DEFITION of delete --> server will return "405 NOT ALLOWED"
 
+# Create a view that performs simple and advanced search
 class Search(APIView):
     def get(self, request, format=None):
         
@@ -55,8 +58,10 @@ class Search(APIView):
             regex = request.query_params.get('regex', 'false')
             
             if(regex.lower() == 'true'):
+                # Advanced search
                 es_request = PostDocument.search().query('query_string', query=key).highlight('title','authors', pre_tags="<mark>", post_tags="</mark>")
             else:
+                # Simple search
                 es_request = PostDocument.search().query('multi_match', query=key, fields=["title", "authors", "subjects", "bookshelves", "keywords"], type="phrase").highlight('title','authors', pre_tags="<mark>", post_tags="</mark>")
             
             es_response = es_request.execute()
@@ -76,12 +81,13 @@ class Search(APIView):
                     neighbors = book['_source']['neighbors'].split('/')
                     if (len(suggested_neighbors) < 5):
                         for neighbor in neighbors:
-                            if neighbor not in suggested_neighbors:
+                            # Add neighbors of the first ebook of the search's result
+                            if neighbor not in suggested_neighbors and neighbor != "":
                                 suggested_neighbors.append(neighbor)
+                                # When 5 ebooks are suggested, we stop
                                 if (len(suggested_neighbors) == 5):
                                     break
-            if "" in suggested_neighbors:
-                suggested_neighbors.remove("")
+            # Return id, title and authors of the suggested ebooks                        
             for neighbor in suggested_neighbors:
                 ebook = Ebook.objects.get(id=neighbor)
                 serializer = EbookSerializer(ebook, many=False)

@@ -2,6 +2,7 @@ from django_elasticsearch_dsl import Document
 from django_elasticsearch_dsl.registries import registry
 from my_gutenberg import models
 
+# Index in Elasticsearch
 @registry.register_document
 class PostDocument(Document):      
     

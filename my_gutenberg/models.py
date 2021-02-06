@@ -1,7 +1,6 @@
 from django.db import models
 
-# Create your models here.
-
+# Create ebooks model given the data in the Gutenberg database
 class Ebook(models.Model):   
 
     id = models.IntegerField(default='-1', primary_key=True)
