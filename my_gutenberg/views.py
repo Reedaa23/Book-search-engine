@@ -1,4 +1,3 @@
-from copy import Error
 from django.http import Http404, HttpResponseServerError
 from my_gutenberg.documents import PostDocument
 from rest_framework.views import APIView

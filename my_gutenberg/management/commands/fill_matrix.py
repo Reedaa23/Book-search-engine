@@ -36,29 +36,47 @@ class Command(BaseCommand):
         
         self.stdout.write('['+time.ctime()+'] Database initializing terminated.')
         
-
+        # Recuperation des valeurs des champs content_url correspondants aux id
         books_urls = []
         a = Ebook.objects.filter(id__range=[first_ebook_id, last_ebook_id]).values_list("content_url")
         books_urls = list(itertools.chain(*a))
-                
+
+        # Recuperation des valeurs des champs languages correspondants aux id
         languages = Ebook.objects.filter(id__range=[first_ebook_id, last_ebook_id]).values_list("languages")
         languages = list(itertools.chain(*languages))
 
-        
+        # Contexte pour pouvoir lire les urls en https
         ctx = ssl.create_default_context()
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE
 
         n = len(books_urls)
-        MATRIX = np.zeros((n, n))
-        decoding = "ISO-8859-1"
-        special_letters = 'àèìòùÀÈÌÒÙáéíóúýÁÉÍÓÚÝâêîôûÂÊÎÔÛãñõÃÑÕäëïöüÿÄËÏÖÜŸçÇßØøÅåÆæœ'
-        G = nx.Graph()
-        G.add_nodes_from(books_urls)
 
+        # Initialisation de la matrice N x N
+        MATRIX = np.zeros((n, n))
+
+        # Decodeur de caractères
+        decoding = "ISO-8859-1"
+
+        # Caractères speciaux pour le decoupage de mots
+        special_letters = 'àèìòùÀÈÌÒÙáéíóúýÁÉÍÓÚÝâêîôûÂÊÎÔÛãñõÃÑÕäëïöüÿÄËÏÖÜŸçÇßØøÅåÆæœ'
+        
+        # Initialisation du graphe
+        G = nx.Graph()
+
+        # Seuil en dessous duquel il existe un lien entre deux noeuds
         threshold = 0.7
         str_list = []
 
+
+        # Remplissage de la matrice ligne par ligne
+        # Lire le contenu de l'url, decoupage du texte en liste mots, stocker cette liste pour lire directement pour les autres lignes
+        # D : union des mots des deux ebooks
+        # d1, d2 : retourne un dict {mot : nombre d'occurence}
+        # Calculer la distance et assigner la valeur
+        # Ajouter un lien entre les deux noeuds si la distance < au seuil
+        # Extraire les keywords avec scikit learn
+        # Affecter ces keywords aux objets Django correspondants
 
         for i in range(len(books_urls)):
             print("Row number : ", i)
