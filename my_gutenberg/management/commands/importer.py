@@ -1,13 +1,3 @@
-"""
-1.  Download http://www.gutenberg.org/cache/epub/feeds/rdf-files.tar.zip 
-2.  Unizip the file
-3.  Go to /cache
-4.  Copy this script in /cache
-5.  Install rdflib package " pip install rdflib "
-5.  Launch the script, it will output the data of the ebook given as a parameter to get_ebook function in the last line, change it as you want (id from 1 to 64202)
-"""
-
-
 import rdflib
 from rdflib import URIRef
 

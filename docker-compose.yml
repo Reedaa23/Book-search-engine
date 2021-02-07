@@ -1,6 +1,7 @@
 version: "3.9"
    
 services:
+  # elasticsearch for indexing
   elasticsearch:
     image: elasticsearch:7.10.1
     environment:
@@ -11,6 +12,7 @@ services:
     ports:
       - "9200:9200"
       - "9300:9300"
+  # backend api
   api:
     build: .
     # put elasticsearch host/ip here
@@ -20,8 +22,10 @@ services:
       - "8000:8000"
     depends_on:
       - elasticsearch
+  # Reactjs frontend
   front:
     image: sofianechikhbled/booklib-front
+    # put elasticsearch and backend api  ip addresses here
     environment: 
       - 'ES_HOST=192.168.1.4'
       - 'API_HOST=192.168.1.4'

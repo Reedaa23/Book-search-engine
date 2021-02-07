@@ -1,5 +1,5 @@
 from copy import Error
-from django.http import Http404
+from django.http import Http404, HttpResponseServerError
 from my_gutenberg.documents import PostDocument
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -11,48 +11,47 @@ import random
 class AllEbooks(APIView):
 
     def get(self, request, format=None):
-        ebooks = Ebook.objects.all()
-        serializer = EbookSerializer(ebooks, many=True)
-        return Response(serializer.data)
-#    def post(self, request, format=None):
-#        NO DEFITION of post --> server will return "405 NOT ALLOWED"
+        try:
+            ebooks = Ebook.objects.all()
+            serializer = EbookSerializer(ebooks, many=True)
+            return Response(serializer.data)
+        except:
+            raise HttpResponseServerError
+
 
 # Create a view that returns 8 random ebooks with all their fields
 class RandomEbooks(APIView):
-
     def get(self, request, format=None):
+        try:
+            all_ebooks = list(Ebook.objects.all())
+            # In case we have less than 8 ebooks in our database
+            if len(all_ebooks) < 8:
+                randomlist = random.sample(list(Ebook.objects.all()),len(all_ebooks))
+            else:
+                randomlist = random.sample(list(Ebook.objects.all()),8)
+            response = []
+            for ebook in randomlist:
+                serializer = EbookSerializer(ebook, many=False)
+                response.append(serializer.data)
+            return Response(response)
+        except:
+            raise HttpResponseServerError
 
-        all_ebooks = list(Ebook.objects.all())
-        # In case we have less than 8 ebooks in our database
-        if len(all_ebooks) < 8:
-            randomlist = random.sample(list(Ebook.objects.all()),len(all_ebooks))
-        else:
-            randomlist = random.sample(list(Ebook.objects.all()),8)
-        response = []
-        for ebook in randomlist:
-            serializer = EbookSerializer(ebook, many=False)
-            response.append(serializer.data)
-        return Response(response)
-#    def post(self, request, format=None):
-#        NO DEFITION of post --> server will return "405 NOT ALLOWED"
 
 # Create a view that returns all fields of an ebook with the given id
 class EbookDetail(APIView):
     
     def get(self, request, pk, format=None):
-
-        ebook = Ebook.objects.get(id=pk)
-        serializer = EbookSerializer(ebook, many=False)
-        return Response(serializer.data)
-#    def put(self, request, pk, format=None):
-#        NO DEFITION of put --> server will return "405 NOT ALLOWED"
-#    def delete(self, request, pk, format=None):
-#        NO DEFITION of delete --> server will return "405 NOT ALLOWED"
+        try:
+            ebook = Ebook.objects.get(id=pk)
+            serializer = EbookSerializer(ebook, many=False)
+            return Response(serializer.data)
+        except:
+            raise HttpResponseServerError
 
 # Create a view that performs simple and advanced search
 class Search(APIView):
-    def get(self, request, format=None):
-        
+    def get(self, request, format=None):   
         try:
             key = request.query_params.get('key')
             regex = request.query_params.get('regex', 'false')
@@ -93,9 +92,5 @@ class Search(APIView):
                 serializer = EbookSerializer(ebook, many=False)
                 response['neighbors'].append({"id": serializer.data["id"], "title": serializer.data["title"], "authors": serializer.data["authors"]})
             return Response(response)
-        except  FileExistsError:
-            raise Http404
-#    def put(self, request, pk, format=None):
-#        NO DEFITION of put --> server will return "405 NOT ALLOWED"
-#    def delete(self, request, pk, format=None):
-#        NO DEFITION of delete --> server will return "405 NOT ALLOWED"
+        except :
+            raise HttpResponseServerError
